@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <unistd.h> // sleep
 
 #include <SDL/SDL.h>
 
@@ -14,6 +15,8 @@
 
 #define kVideoPixelTop		((kScreenHeight >> 1) - (kVideoScanlines >> 1))
 #define kVideoPixelLeft		((kScreenWidth >> 1) - (kVideoPixelWidth >> 1))
+
+#define kVideoRefresh		30
 
 typedef struct video_buffer_t  {
 	uint8_t data[kVideoBufferSize];
@@ -39,10 +42,10 @@ enum {
 
 typedef struct vm_t *vm_p;
 typedef struct vm_t {
-	SDL_Event event;
-	video_t video;
-	vm_thread_t thread;
-
+	SDL_Event	event;
+	video_t		video;
+	vm_thread_t	thread;
+	
 	int state;
 	
 	void (*run)(vm_p vm);
@@ -85,8 +88,71 @@ void catch_sig(int sign)
 void video_update(video_p video) {
 }
 
+static inline uint64_t get_dtime(void) {
+   	uint32_t hi, lo;
+   	
+	__asm__ __volatile__ ("xorl %%eax,%%edx\n" : : : "%eax", "%edx");
+	__asm__ __volatile__ ("xorl %%eax,%%edx\n" : : : "%eax", "%edx");
+	__asm__ __volatile__ ("xorl %%eax,%%edx\n" : : : "%eax", "%edx");
+	__asm__ __volatile__ ("xorl %%eax,%%edx\n" : : : "%eax", "%edx");
+	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+	
+	return(((uint64_t)hi << 32) | (uint64_t)lo);
+}
+
+#define KHz(hz) ((hz)*1000ULL)
+#define MHz(hz) KHz(KHz(hz))
+
+static uint64_t calibrate_get_dtime_loop(void)
+{
+   	uint64_t start, elapsedTime;
+
+	start = get_dtime();
+	elapsedTime = get_dtime() - start;
+
+	int i;
+	for(i=2; i<=1024; i++) {
+		start = get_dtime();
+		elapsedTime += get_dtime() - start;
+	}
+		
+	return(elapsedTime / i);
+	
+}
+
+static uint64_t calibrate_get_dtime_sleep(void)
+{
+   	uint64_t start = get_dtime();
+	
+	sleep(1);
+		
+	return(get_dtime() - start);
+}
+
+static uint64_t dtime_calibrate(void)
+{
+	uint64_t cycleTime = calibrate_get_dtime_loop();
+	uint64_t elapsedTime, ecdt;
+	double emhz;
+
+	printf("%s: calibrate_get_dtime_cycles(%016llu)\n", __FUNCTION__, cycleTime);
+
+	elapsedTime = 0;
+
+	for(int i = 1; i <= 3; i++) {
+		elapsedTime += calibrate_get_dtime_sleep() - cycleTime;
+
+		ecdt = elapsedTime / i;
+		emhz = ecdt / MHz(1);
+		printf("%s: elapsed time: %016llu  ecdt: %016llu  estMHz: %010.4f\n", __FUNCTION__, elapsedTime, ecdt, emhz);
+	}
+	return(ecdt);
+}
+
 int main(int argc, char *argv[])
 {
+	int count = 0;
+	
 	vm_p vm = &default_vm_rec;
 
 	signal(SIGINT, catch_sig);
@@ -95,13 +161,27 @@ int main(int argc, char *argv[])
 	video_init(argc, argv, &vm->video);
 
 	vm->state = vm_state_running;
-	
-	while(default_vm_rec.state != vm_state_done) {
-		if(vm->video.needRefresh)
-			video_update(&vm->video);
 
+	uint64_t cyclesPerSecond = dtime_calibrate();
+	
+	vm->thread.runCycles = ((cyclesPerSecond / 100) / kVideoRefresh);
+
+	uint64_t run_start_time = get_dtime();
+	while(default_vm_rec.state != vm_state_done) {
 		vm_run_no_thread(&vm->thread);
 
+		if(vm->video.needRefresh) {
+			video_update(&vm->video);
+		} count++; if(30 > count) {
+			uint64_t elapsed_dtime = get_dtime() - run_start_time;
+			double run_seconds = elapsed_dtime / (double)cyclesPerSecond;
+			double eacdt = (double)elapsed_dtime / (double)vm->thread.cycle;
+			vm->thread.runCycles = (cyclesPerSecond / kVideoRefresh) / eacdt;
+			printf("[vm_run_thread] - cycle: %016llu ecdt: %016llu eacdt: %08.4f run_cycles: %016lu\r", 
+				vm->thread.cycle, elapsed_dtime, eacdt, vm->thread.runCycles);
+			count = 0;
+		}
+		
 		SDL_PollEvent(&vm->event);
 		switch (vm->event.type) {
 			case	SDL_QUIT:
@@ -109,11 +189,13 @@ int main(int argc, char *argv[])
 				break;
 			case	SDL_KEYDOWN: {
 				int scancode = vm->event.key.keysym.scancode;
-				if(0x1b == scancode)
+				if(/*0x1b*/ 0x09 == scancode)
 					vm->state = vm_state_done;
 			} break;
 		}
 	}
+
+	printf("\n\n");
 
 	return(0);
 }

@@ -174,21 +174,26 @@ static uint_fast32_t _sub_m_mi(vm_thread_p thread, uint_fast32_t arg1, uint_fast
 		store32(thread, arg1r, oper(thread, arg1v, _mi8(thread))); \
 	} break;
 
-static void vm_run_thread(vm_thread_p thread)
+static int vm_run_thread(vm_thread_p thread)
 {
-	thread->ip &= 0x7ff;
+	thread->ip &= ~PAGE_MASK;
 	switch(_i8(thread)) {
 		INST_ESAC_TABLE
 		default:
-			STATE("");
+			usleep(1);
+			break;
 	}
+	
+	return(0);
 }
 
 void vm_run_no_thread(vm_thread_p thread)
 {
-	thread->count = 8192;
-	
-	while(thread->count--)
-		vm_run_thread(thread);
+	uint32_t count = thread->runCycles;
+
+	while((0 != count) && (0 == vm_run_thread(thread))) {
+		count--;
+		thread->cycle++;
+	}
 }
 

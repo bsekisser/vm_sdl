@@ -1,5 +1,20 @@
 #define CHAR_BITS 8
 
+/* PAGE_SHIFT, PAGE_SIZE, PAGE_MASK part of linux kernel */
+#ifndef PAGE_SHIFT
+#define PAGE_SHIFT 12
+#endif
+
+/* PAGE_SHIFT, PAGE_SIZE, PAGE_MASK part of linux kernel */
+#ifndef PAGE_SIZE
+#define PAGE_SIZE (1UL << PAGE_SHIFT)
+#endif
+
+/* PAGE_SHIFT, PAGE_SIZE, PAGE_MASK part of linux kernel */
+#ifndef PAGE_MASK
+#define PAGE_MASK (~(PAGE_SIZE - 1))
+#endif
+
 #define INST_ESAC_TABLE \
 		INST_M_x_I_ESAC(add_m_i, _add_m_mi) \
 		INST_M_x_MI_ESAC(add_m_mi, _add_m_mi) \
@@ -58,11 +73,13 @@ enum {
 
 typedef struct vm_thread_t {
 //	pthread_t		thread;
-	uint_fast32_t		count;
+	uint32_t		runCycles;
+	uint64_t		cycle;
 
-	uint8_t			flash[4096];
-	uint32_t		zero[65536];
+	uint8_t			flash[PAGE_SIZE];
+	uint32_t		zero[16 * PAGE_SIZE];
 	uint16_t		ip;
 }vm_thread_t, *vm_thread_p;
 
 void vm_run_no_thread(vm_thread_p thread);
+

@@ -43,7 +43,7 @@ ${target}: ${project}
 
 
 run: ${OBJ}/${target}.elf
-	%{OBJ}/${target}.elf
+	${OBJ}/${target}.elf
 
 clean: clean-${OBJ}
 	rm -rf ${target}
