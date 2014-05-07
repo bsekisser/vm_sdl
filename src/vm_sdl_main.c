@@ -5,15 +5,15 @@
 #define kScreenWidth	320
 #define kScreenHeight	200
 
-#define kVideoBuffWidth		25
-#define kVideoBuffHeight	24
+#define kVideoBuffWidth		(kScreenWidth >> 3)
+#define kVideoBuffHeight	(kScreenHeight >> 3)
 
-#define	kVideoPixelWidth	(kVideoBuffWidth<<3)
-#define kVideoScanlines		(kVideoBuffHeight<<3)
-#define kVideoBufferSize	((kVideoBuffWidth*kVideoScanlines)<<2)
+#define	kVideoPixelWidth	(kVideoBuffWidth << 3)
+#define kVideoScanlines		(kVideoBuffHeight << 3)
+#define kVideoBufferSize	((kVideoBuffWidth * kVideoScanlines) << 2)
 
-#define kVideoPixelTop		((kScreenHeight>>1)-(kVideoScanlines>>1))
-#define kVideoPixelLeft		((kScreenWidth>>1)-(kVideoPixelWidth>>1))
+#define kVideoPixelTop		((kScreenHeight >> 1) - (kVideoScanlines >> 1))
+#define kVideoPixelLeft		((kScreenWidth >> 1) - (kVideoPixelWidth >> 1))
 
 typedef struct video_buffer_t  {
 	uint8_t data[kVideoBufferSize];
