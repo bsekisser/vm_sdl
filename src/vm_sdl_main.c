@@ -86,6 +86,14 @@ void catch_sig(int sign)
 }
 
 void video_update(video_p video) {
+	SDL_LockSurface(video->surface);
+	
+//	int i;
+	for(int i=0; i<((kScreenWidth * kScreenHeight) >> 1); i++)
+		((uint32_t *)video->surface->pixels)[i] = default_vm_rec.thread.zero[i];
+	
+	SDL_UnlockSurface(video->surface);
+	SDL_Flip(video->surface);
 }
 
 static inline uint64_t get_dtime(void) {
@@ -149,6 +157,8 @@ static uint64_t dtime_calibrate(void)
 	return(ecdt);
 }
 
+void vm_thread_flash_init(vm_thread_p thread);
+
 int main(int argc, char *argv[])
 {
 	int count = 0;
@@ -166,6 +176,8 @@ int main(int argc, char *argv[])
 	
 	vm->thread.runCycles = ((cyclesPerSecond / 100) / kVideoRefresh);
 
+	vm_thread_flash_init(&vm->thread);
+
 	uint64_t run_start_time = get_dtime();
 	while(default_vm_rec.state != vm_state_done) {
 		vm_run_no_thread(&vm->thread);
@@ -174,11 +186,12 @@ int main(int argc, char *argv[])
 			video_update(&vm->video);
 		} count++; if(30 > count) {
 			uint64_t elapsed_dtime = get_dtime() - run_start_time;
-			double run_seconds = elapsed_dtime / (double)cyclesPerSecond;
+//			double run_seconds = elapsed_dtime / (double)cyclesPerSecond;
 			double eacdt = (double)elapsed_dtime / (double)vm->thread.cycle;
 			vm->thread.runCycles = (cyclesPerSecond / kVideoRefresh) / eacdt;
-			printf("[vm_run_thread] - cycle: %016llu ecdt: %016llu eacdt: %08.4f run_cycles: %016lu\r", 
-				vm->thread.cycle, elapsed_dtime, eacdt, vm->thread.runCycles);
+			double emips = cyclesPerSecond / (eacdt * (double)1000000.0);
+			printf("[vm_run_thread] - cycle: %016llu elapsed: %016llu eacdt: %08.4f run_cycles: %016u mips: %08.4f\r", 
+				vm->thread.cycle, elapsed_dtime, eacdt, vm->thread.runCycles, emips);
 			count = 0;
 		}
 		

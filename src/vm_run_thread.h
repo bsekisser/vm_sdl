@@ -34,8 +34,11 @@
 		INST_M_x_MI_ESAC(lsl_m_mi, _lsl_m_mi) \
 		INST_M_x_I_ESAC(lsr_m_i, _lsr_m_mi) \
 		INST_M_x_MI_ESAC(lsr_m_mi, _lsr_m_mi) \
-		INST_x_I_ESAC(mov_m_i, _mov_m_mi) \
+		INST_x_I_ESAC(mov_m_i, _mov_m_i) \
+		INST_x_I_ESAC(mov_m_i32, _mov_m_i32) \
 		INST_x_MI_ESAC(mov_m_mi, _mov_m_mi) \
+		INST_M_x_I_ESAC(mul_m_i, _mul_m_mi) \
+		INST_M_x_MI_ESAC(mul_m_mi, _mul_m_mi) \
 		INST_M_x_I_ESAC(or_m_i, _or_m_mi) \
 		INST_M_x_MI_ESAC(or_m_mi, _or_m_mi) \
 		INST_M_x_I_ESAC(rol_m_i, _rol_m_mi) \
@@ -76,9 +79,10 @@ typedef struct vm_thread_t {
 	uint32_t		runCycles;
 	uint64_t		cycle;
 
-	uint8_t			flash[PAGE_SIZE];
-	uint32_t		zero[16 * PAGE_SIZE];
-	uint16_t		ip;
+	uint8_t			flash[PAGE_SIZE + 3];
+	uint8_t			zero[16 * PAGE_SIZE];
+	uint32_t		ip;
+	uint32_t		sp;
 }vm_thread_t, *vm_thread_p;
 
 void vm_run_no_thread(vm_thread_p thread);
