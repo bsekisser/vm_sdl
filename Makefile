@@ -36,6 +36,7 @@ project = ${OBJ}/${target}.elf
 
 ${project}: ${OBJ}/vm_sdl_main.o
 ${project}: ${OBJ}/vm_run_thread.o
+${project}: ${OBJ}/vm_run_thread_trace.o
 ${project}: ${OBJ}/vm_flash_init.o
 
 #${project}: ${OBJ}/${target}.o

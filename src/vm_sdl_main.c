@@ -37,7 +37,6 @@ enum {
 	vm_state_stopped,
 	vm_state_step_one,
 	vm_state_running,
-	
 };
 
 typedef struct vm_t *vm_p;

@@ -30,13 +30,17 @@
 		INST_x_M_MI_ESAC(branch_ne_x_m_mi, _branch_ne_m_mi) \
 		INST_M_x_I_ESAC(eor_m_i, _eor_m_mi) \
 		INST_M_x_MI_ESAC(eor_m_mi, _eor_m_mi) \
+		INST_x_MI_ESAC(ior_m_mi, _ior_m_mi) \
+		INST_x_MI_ESAC(iow_m_mi, _iow_m_mi) \
 		INST_M_x_I_ESAC(lsl_m_i, _lsl_m_mi) \
 		INST_M_x_MI_ESAC(lsl_m_mi, _lsl_m_mi) \
 		INST_M_x_I_ESAC(lsr_m_i, _lsr_m_mi) \
 		INST_M_x_MI_ESAC(lsr_m_mi, _lsr_m_mi) \
-		INST_x_I_ESAC(mov_m_i, _mov_m_i) \
-		INST_x_I_ESAC(mov_m_i32, _mov_m_i32) \
-		INST_x_MI_ESAC(mov_m_mi, _mov_m_mi) \
+		INST_x_I_ESAC(mov_m_i, _mov_m_i) /* load 8-bit immediate into memory/register */\
+		INST_x_I_ESAC(mov_m_i32, _mov_m_i32) /* load 32-bit immediate into memory/register */\
+		INST_x_I_ESAC(mov_m_mi, _mov_m_mi) /* move from register / memory */\
+		INST_x_MI_ESAC(mov_mm_mi, _mov_m_mi) /* memory indirect move from register / memory */\
+		INST_x_I_ESAC(mov_m_mmi, _mov_m_mmi) /* move from memory indirect */\
 		INST_M_x_I_ESAC(mul_m_i, _mul_m_mi) \
 		INST_M_x_MI_ESAC(mul_m_mi, _mul_m_mi) \
 		INST_M_x_I_ESAC(or_m_i, _or_m_mi) \
@@ -74,13 +78,16 @@ enum {
 	INST_ESAC_TABLE
 };
 
+#define M_ADDR_SIZE (16 * PAGE_SIZE)
+#define M_ADDR_MASK (~(M_ADDR_SIZE - 1))
+
 typedef struct vm_thread_t {
 //	pthread_t		thread;
 	uint32_t		runCycles;
 	uint64_t		cycle;
 
 	uint8_t			flash[PAGE_SIZE + 3];
-	uint8_t			zero[16 * PAGE_SIZE];
+	uint8_t			zero[M_ADDR_SIZE];
 	uint32_t		ip;
 	uint32_t		sp;
 }vm_thread_t, *vm_thread_p;
